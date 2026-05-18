@@ -1,13 +1,13 @@
 const config = window.STORY_CONFIG;
+
 let current = 0;
 let answers = Array(config.questions.length).fill(null);
-let fromQ4ToQ5 = false;
-let q5Timer = null;
+let selectedScores = Array(config.questions.length).fill(null);
+let stats = {};
 let q25Timer = null;
 let q25Elements = [];
 let grayMask = null;
-let wrongCount = 0;
-let q25Locked = false;
+let logs = [];
 
 const total = config.questions.length;
 const mainBox = document.getElementById("mainBox");
@@ -22,10 +22,47 @@ const bgm = document.getElementById("bgm");
 
 titleEl.innerText = config.title;
 
+const logPanel = document.createElement("aside");
+logPanel.className = "system-log";
+logPanel.innerHTML = "<div class='system-log-title'>SYSTEM LOG</div><div id='logLines'></div>";
+document.body.appendChild(logPanel);
+
+function addStats(score = {}) {
+  Object.entries(score).forEach(([key, value]) => {
+    stats[key] = (stats[key] || 0) + value;
+  });
+}
+
+function removeStats(score = {}) {
+  Object.entries(score).forEach(([key, value]) => {
+    stats[key] = (stats[key] || 0) - value;
+    if (stats[key] === 0) delete stats[key];
+  });
+}
+
+function applyChoice(index, optionIndex, score = {}) {
+  if (selectedScores[index]) removeStats(selectedScores[index]);
+  selectedScores[index] = score;
+  answers[index] = optionIndex;
+  addStats(score);
+}
+
+function addLog(text) {
+  if (!text) return;
+  logs.push(text);
+  if (logs.length > 6) logs = logs.slice(-6);
+  renderLogs();
+}
+
+function renderLogs() {
+  const lines = document.getElementById("logLines");
+  lines.innerHTML = logs.map((line) => `<div class="log-line">${line}</div>`).join("");
+  logPanel.classList.toggle("visible", current >= 10 || logs.length > 0);
+}
+
 function clearAllEffects() {
-  if (current !== 24) stopQ25Effect();
-  if (q5Timer) clearTimeout(q5Timer);
-  document.querySelectorAll(".float-text,.terror-mask,.fullscreen-love,.start-modal,.q16-modal,.submit-modal,.black-screen,.black-full-text,.end-modal").forEach((el) => el.remove());
+  if (current !== 24) stopPeepEffect();
+  document.querySelectorAll(".float-text,.terror-mask,.fullscreen-love,.start-modal,.q16-modal,.submit-modal,.black-screen,.black-full-text,.end-modal,.corner-whisper,.profile-modal").forEach((el) => el.remove());
   document.documentElement.style.setProperty("background", "#f7f8fa");
   document.body.style.setProperty("background", "#f7f8fa");
   mainBox.style.opacity = "1";
@@ -33,63 +70,21 @@ function clearAllEffects() {
   nextBtn.disabled = false;
 }
 
-function resetDiary() {
-  diaryWrap.innerHTML = "";
-  config.diary.forEach((page, index) => {
-    const section = document.createElement("section");
-    section.className = `diary-page${index === 0 ? " active" : ""}${page.final ? " final-page" : ""}`;
-    section.dataset.page = index;
-    if (page.date) {
-      const date = document.createElement("div");
-      date.className = "diary-date";
-      date.innerText = page.date;
-      section.appendChild(date);
-    }
-    const content = document.createElement("div");
-    content.className = "diary-content";
-    content.innerHTML = page.html;
-    section.appendChild(content);
-    if (index > 0 && !page.final) section.appendChild(pageButton("page-prev", "←", () => showDiaryPage(index - 1)));
-    if (index < config.diary.length - 1 && !page.final) section.appendChild(pageButton("page-next", "→", () => showDiaryPage(index + 1)));
-    diaryWrap.appendChild(section);
-  });
-  diaryWrap.style.display = "none";
-  const agreeBtn = document.getElementById("agreeBtn");
-  if (agreeBtn) agreeBtn.onclick = showDiaryEnding;
-}
-
-function pageButton(className, label, onClick) {
-  const btn = document.createElement("button");
-  btn.type = "button";
-  btn.className = className;
-  btn.innerText = label;
-  btn.onclick = onClick;
-  return btn;
-}
-
-function showDiaryPage(index) {
-  diaryWrap.querySelectorAll(".diary-page").forEach((page) => page.classList.toggle("active", Number(page.dataset.page) === index));
-  const agreeBtn = document.getElementById("agreeBtn");
-  if (agreeBtn) agreeBtn.onclick = showDiaryEnding;
-}
-
-function stopQ25Effect() {
+function stopPeepEffect() {
   if (q25Timer) clearInterval(q25Timer);
+  q25Timer = null;
   q25Elements.forEach((el) => el.remove());
   q25Elements = [];
   if (grayMask) grayMask.remove();
   grayMask = null;
-  q25Locked = false;
   document.querySelectorAll(".option").forEach((opt) => {
     opt.classList.remove("locked");
     opt.style.pointerEvents = "auto";
   });
 }
 
-function startQ25Effect() {
-  if (q25Locked) return;
-  stopQ25Effect();
-  q25Locked = true;
+function startPeepEffect() {
+  stopPeepEffect();
   document.querySelectorAll(".option").forEach((opt) => {
     opt.classList.add("locked");
     opt.style.pointerEvents = "none";
@@ -98,17 +93,17 @@ function startQ25Effect() {
   grayMask.className = "q25-gray-mask";
   document.body.appendChild(grayMask);
   q25Timer = setInterval(() => {
-    for (let i = 0; i < 15; i++) {
+    for (let i = 0; i < 12; i++) {
       const p = document.createElement("div");
       p.className = "peep-text";
-      p.innerText = config.effects.q25[Math.floor(Math.random() * config.effects.q25.length)];
-      p.style.left = `${Math.random() * 100}vw`;
-      p.style.top = `${Math.random() * 100}vh`;
+      p.innerText = config.peepTexts[Math.floor(Math.random() * config.peepTexts.length)];
+      p.style.left = `${Math.random() * 92}vw`;
+      p.style.top = `${Math.random() * 92}vh`;
       document.body.appendChild(p);
       q25Elements.push(p);
     }
-  }, 100);
-  setTimeout(stopQ25Effect, 5000);
+  }, 140);
+  setTimeout(stopPeepEffect, 4200);
 }
 
 function openStartModal() {
@@ -142,311 +137,139 @@ function openStartModal() {
   document.body.appendChild(modal);
 }
 
-function startQ5Effect() {
-  if (q5Timer) clearTimeout(q5Timer);
-  const effect = config.effects.q5;
-  q5Timer = setTimeout(() => {
-    if (current !== 4) return;
-    const opts = document.querySelectorAll(".option");
-    const originalTexts = Array.from(opts).map((o) => o.innerText);
-    opts.forEach((o) => (o.style.pointerEvents = "none"));
-    prevBtn.disabled = true;
-    nextBtn.disabled = true;
-    opts.forEach((opt, i) => setTimeout(() => (opt.innerText = effect.replacement), i * effect.stagger));
-    setTimeout(() => {
-      if (current !== 4) return;
-      opts.forEach((o, i) => (o.innerText = originalTexts[i]));
-      opts.forEach((o) => (o.style.pointerEvents = "auto"));
-      prevBtn.disabled = current === 0;
-      nextBtn.disabled = false;
-    }, effect.duration);
-  }, effect.delay);
-}
-
-function startQ8Effect(selectedIndex) {
-  document.documentElement.style.setProperty("background", "#d80000", "important");
-  document.body.style.setProperty("background", "#d80000", "important");
-  mainBox.style.opacity = "0";
-  prevBtn.disabled = true;
-  nextBtn.disabled = true;
-  document.querySelectorAll(".option").forEach((o) => (o.style.pointerEvents = "none"));
-  const textList = selectedIndex < 2 ? config.effects.q8.aware : config.effects.q8.ignore;
-  const created = [];
-  const timer = setInterval(() => {
-    for (let i = 0; i < 10; i++) {
-      const el = document.createElement("div");
-      el.className = "float-text";
-      el.innerText = Math.random() > 0.5 ? textList[Math.floor(Math.random() * textList.length)] : config.effects.q8.glitch[Math.floor(Math.random() * config.effects.q8.glitch.length)];
-      el.style.left = `${50 + (Math.random() - 0.5) * 100}vw`;
-      el.style.top = `${50 + (Math.random() - 0.5) * 100}vh`;
-      el.style.fontSize = `${12 + Math.random() * 16}px`;
-      document.body.appendChild(el);
-      created.push(el);
-    }
-  }, 200);
-  setTimeout(() => {
-    clearInterval(timer);
-    created.forEach((e) => e.remove());
-    document.documentElement.style.setProperty("background", "#f7f8fa", "important");
-    document.body.style.setProperty("background", "#f7f8fa", "important");
-    mainBox.style.opacity = "1";
-    prevBtn.disabled = current === 0;
-    nextBtn.disabled = false;
-    document.querySelectorAll(".option").forEach((o) => (o.style.pointerEvents = "auto"));
-    current++;
-    renderQuestion();
-  }, 5000);
-}
-
-function triggerTerror(text, nextQ) {
-  const mask = document.createElement("div");
-  mask.className = "terror-mask";
-  const t = document.createElement("div");
-  t.className = "terror-text";
-  mask.appendChild(t);
-  document.body.appendChild(mask);
-  let idx = 0;
-  function typeText() {
-    if (idx < text.length) {
-      t.innerText += text[idx];
-      idx++;
-      setTimeout(typeText, 80);
-      return;
-    }
-    setTimeout(() => {
-      const glitch = setInterval(() => {
-        t.innerText = t.innerText.split("").sort(() => Math.random() - 0.5).join("");
-      }, 60);
-      setTimeout(() => {
-        clearInterval(glitch);
-        mask.remove();
-        current = nextQ;
-        renderQuestion();
-      }, 600);
-    }, 1000);
-  }
-  typeText();
-}
-
-function startLoveTyping() {
-  mainBox.style.opacity = "0";
-  prevBtn.disabled = true;
-  nextBtn.disabled = true;
-  const el = document.createElement("div");
-  el.className = "fullscreen-love";
-  document.body.appendChild(el);
-  const str = config.unlockPhrase;
-  let i = 0;
-  const timer = setInterval(() => {
-    el.innerText += str[i % str.length];
-    i++;
-    if (el.innerText.length >= 600) {
-      clearInterval(timer);
-      setTimeout(() => {
-        el.remove();
-        mainBox.style.opacity = "1";
-        prevBtn.disabled = current === 0;
-        nextBtn.disabled = false;
-        current++;
-        renderQuestion();
-      }, 200);
-    }
-  }, 10);
-}
-
-function openQ16Modal() {
-  let index = 0;
+function showProfileModal() {
   const modal = document.createElement("div");
-  modal.className = "q16-modal";
-  const textEl = document.createElement("div");
-  textEl.className = "q16-text";
-  textEl.innerText = config.effects.q16[index];
-  const btn = document.createElement("button");
-  btn.className = "q16-btn";
-  btn.type = "button";
-  btn.innerText = "继续";
-  btn.onclick = () => {
-    index++;
-    if (index < config.effects.q16.length) {
-      textEl.innerText = config.effects.q16[index];
-      if (index === config.effects.q16.length - 1) btn.innerText = "关闭";
-      return;
-    }
-    modal.remove();
-  };
-  modal.append(textEl, btn);
+  modal.className = "profile-modal";
+  modal.innerHTML = `<div class="profile-inner">${config.profileHtml}<button class="submit-btn" type="button" id="closeProfile">关闭资料</button></div>`;
   document.body.appendChild(modal);
+  document.getElementById("closeProfile").onclick = () => modal.remove();
 }
 
-function blackPunish() {
-  const screen = document.createElement("div");
-  screen.className = "black-screen";
-  screen.innerText = config.final.wrongFirst;
-  document.body.appendChild(screen);
-  setTimeout(() => {
-    screen.innerText = config.final.wrongSecond;
-    screen.style.color = "#fff";
-    screen.style.textShadow = "0 0 2px #fff, 0 0 5px #fff, 0 0 8px #ddd";
-  }, 2000);
-  setTimeout(() => {
-    screen.remove();
-    showInputModal();
-  }, 3500);
-}
-
-function showInputModal() {
-  clearAllEffects();
-  const modal = document.createElement("div");
-  modal.className = "submit-modal";
-  const inner = document.createElement("div");
-  inner.className = "submit-modal-inner";
-  inner.innerHTML = `
-    <div style="margin-bottom: 10px; font-size: 16px; text-align: center;">${config.final.unlockTitle}</div>
-    <div class="modal-column">
-      <input class="love-input" type="text" id="loveInput" placeholder="${config.final.inputPlaceholder}">
-      <button class="submit-btn" id="unlockBtn" type="button">继续</button>
-    </div>
-  `;
-  modal.appendChild(inner);
-  document.body.appendChild(modal);
-  const input = document.getElementById("loveInput");
-  const unlockBtn = document.getElementById("unlockBtn");
-  unlockBtn.onclick = () => {
-    if (input.value.trim() === config.unlockPhrase) {
-      modal.remove();
-      mainBox.style.display = "none";
-      resetDiary();
-      diaryWrap.style.display = "flex";
-      return;
-    }
-    wrongCount++;
-    if (wrongCount === 1) {
-      modal.remove();
-      blackPunish();
-    } else {
-      unlockBtn.disabled = true;
-      unlockBtn.classList.add("locked");
-      unlockBtn.style.background = "#ccc";
-      unlockBtn.style.color = "#999";
-    }
-  };
-}
-
-function showFinalModal() {
-  clearAllEffects();
-  mainBox.style.display = "none";
-  const modal = document.createElement("div");
-  modal.className = "submit-modal";
-  const inner = document.createElement("div");
-  inner.className = "submit-modal-inner";
-  inner.innerHTML = `
-    <div style="font-size:16px;font-weight:bold;">${config.final.promptTitle}</div>
-    <div style="margin:12px 0;">${config.final.promptBody}</div>
-    <button class="submit-btn" id="yesBtn" type="button">${config.final.promptButton}</button>
-    <div class="refuse-tip">${config.final.promptTip}</div>
-  `;
-  modal.appendChild(inner);
-  document.body.appendChild(modal);
-  document.getElementById("yesBtn").onclick = () => {
-    modal.remove();
-    showInputModal();
-  };
-}
-
-function showDiaryEnding() {
-  clearAllEffects();
-  diaryWrap.style.display = "none";
-  const blackFull = document.createElement("div");
-  blackFull.className = "black-full-text";
-  blackFull.innerHTML = `
-    <div style="display:flex;flex-direction:column;align-items:center;gap:16px;">
-      <div class="text-container" style="height:40px;display:flex;align-items:center;justify-content:center;"></div>
-      <button class="red-confirm-btn" style="display:none;" type="button">确认</button>
-    </div>
-  `;
-  document.body.appendChild(blackFull);
-  const textDom = blackFull.querySelector(".text-container");
-  const confirmBtn = blackFull.querySelector(".red-confirm-btn");
-  let textIndex = 0;
-  function showText() {
-    if (textIndex < config.final.diaryEndTexts.length) {
-      textDom.innerText = config.final.diaryEndTexts[textIndex];
-      textIndex++;
-      if (textIndex === config.final.diaryEndTexts.length) setTimeout(() => (confirmBtn.style.display = "block"), 1000);
-      setTimeout(showText, 1500);
-    }
-  }
-  showText();
-  confirmBtn.onclick = () => {
-    blackFull.remove();
-    const endModal = document.createElement("div");
-    endModal.className = "end-modal";
-    endModal.innerHTML = `
-      <div style="font-size:16px;font-weight:bold;margin-bottom:15px;">${config.final.restartTitle}</div>
-      <div style="color:#666;margin-bottom:16px;">${config.final.restartBody}</div>
-      <button class="start-btn" id="restartBtn" type="button">确认</button>
-    `;
-    document.body.appendChild(endModal);
-    document.getElementById("restartBtn").onclick = () => {
-      endModal.remove();
-      clearAllEffects();
-      resetDiary();
-      current = 0;
-      answers = Array(total).fill(null);
-      wrongCount = 0;
-      fromQ4ToQ5 = false;
-      mainBox.style.display = "none";
-      openStartModal();
-    };
-  };
+function showCornerWhisper(text) {
+  const corner = document.createElement("div");
+  corner.className = "corner-whisper";
+  corner.innerText = text;
+  document.body.appendChild(corner);
 }
 
 function renderQuestion() {
   clearAllEffects();
   const q = config.questions[current];
-  progressEl.innerText = `第 ${current + 1} 题 / 共 ${total} 题`;
+  progressEl.innerText = q.progressOverride || `第 ${current + 1} 题 / ${config.progressTotalLabel}`;
   questionEl.innerText = q.q;
   optionsEl.innerHTML = "";
   mainBox.style.opacity = "1";
+  if (q.log) addLog(q.log);
+  if (q.corner) showCornerWhisper(q.corner);
+  if (q.silenceBgm) bgm.pause();
+  if (q.peep) setTimeout(startPeepEffect, 300);
+
   q.opt.forEach((item, idx) => {
     const div = document.createElement("button");
     div.type = "button";
-    div.className = "option";
+    div.className = `option ${item.className || ""}`;
     if (answers[current] === idx) div.classList.add("selected");
-    div.innerText = item;
-    div.onclick = () => chooseOption(div, idx);
+    div.innerText = item.text;
+    if (item.hoverText) {
+      div.dataset.original = item.text;
+      div.dataset.hover = item.hoverText;
+      div.addEventListener("mouseenter", () => (div.innerText = item.hoverText));
+      div.addEventListener("mouseleave", () => (div.innerText = item.text));
+    }
+    if (current === 13 && idx === 3) {
+      div.addEventListener("mouseenter", () => optionsEl.classList.add("dim-others"));
+      div.addEventListener("mouseleave", () => optionsEl.classList.remove("dim-others"));
+    }
+    div.onclick = () => chooseOption(div, idx, item);
     optionsEl.appendChild(div);
   });
-  if (current === 4 && fromQ4ToQ5) {
-    startQ5Effect();
-    fromQ4ToQ5 = false;
-  }
+
   prevBtn.disabled = current === 0;
-  nextBtn.innerText = current === total - 1 ? "提交问卷" : "下一题";
+  nextBtn.innerText = current === total - 1 ? "提交选择" : "下一题";
 }
 
-function chooseOption(div, idx) {
-  answers[current] = idx;
-  document.querySelectorAll(".option").forEach((opt) => opt.classList.remove("selected"));
-  div.classList.add("selected");
-  if (current === 24) return startQ25Effect();
-  if (current === 2) return triggerTerror(idx < config.effects.q3.happyIndex ? config.effects.q3.sadText : config.effects.q3.happyText, current + 1);
-  if (current === 7) return startQ8Effect(idx);
-  if (current === 15) return setTimeout(openQ16Modal, 100);
-  if (current === 16) {
-    if (config.effects.q17.allow.includes(idx)) return startLoveTyping();
+function chooseOption(div, idx, item) {
+  if (item.blockedText) {
+    div.innerText = item.blockedText;
     div.classList.add("locked");
-    div.innerText = config.effects.q17.lockedText;
-    div.onclick = null;
+    addLog(item.blockedText);
+    applyChoice(current, idx, item.score);
     return;
   }
-  if (current === 19) {
-    div.innerText = config.effects.q20[idx];
-    if (idx !== 3) {
-      div.classList.add("locked");
-      div.onclick = null;
-    }
+
+  applyChoice(current, idx, item.score);
+  document.querySelectorAll(".option").forEach((opt) => opt.classList.remove("selected"));
+  div.classList.add("selected");
+  addLog(`你选择了：${current >= 18 && idx !== 3 ? "第 0 名队友" : item.text.replace(/^[A-D]\.\s*/, "")}`);
+
+  if (config.questions[current].profile) showProfileModal();
+  if (current === total - 1) {
+    showFinalResult(idx);
   }
+}
+
+function computeEnding(finalIndex) {
+  if (stats.loop >= 5) return config.endings.loop;
+  if (stats.escape >= 5 || finalIndex === 2) return config.endings.escape;
+  if (stats.truth >= 5 || finalIndex === 3) return config.endings.truth;
+  if (stats.depend >= 9 || finalIndex === 1) return config.endings.only;
+  return config.endings.perfect;
+}
+
+function showFinalResult(finalIndex) {
+  clearAllEffects();
+  mainBox.style.display = "none";
+  const modal = document.createElement("div");
+  modal.className = "black-full-text result-screen";
+  const key = ["A", "B", "C", "D"][finalIndex];
+  const lines = config.finalLines[key];
+  const ending = computeEnding(finalIndex);
+  modal.innerHTML = `<div class="result-lines"></div><button class="red-confirm-btn" style="display:none;" type="button">查看测评报告</button>`;
+  document.body.appendChild(modal);
+  const resultLines = modal.querySelector(".result-lines");
+  const btn = modal.querySelector(".red-confirm-btn");
+  let i = 0;
+  function showLine() {
+    if (i < lines.length) {
+      const div = document.createElement("div");
+      div.innerText = lines[i];
+      resultLines.appendChild(div);
+      i++;
+      setTimeout(showLine, 900);
+      return;
+    }
+    btn.style.display = "block";
+  }
+  showLine();
+  btn.onclick = () => showEnding(modal, ending);
+}
+
+function showEnding(container, ending) {
+  container.className = "submit-modal";
+  container.innerHTML = `
+    <div class="submit-modal-inner ending-report">
+      <div class="fake-report">
+        <div>你的最佳队伍构成为：</div>
+        <div class="strike">前排 1，治疗 1，魔法 1，辅助 1</div>
+        <div class="strike">斥候 1，军师 1，公会伙伴 1</div>
+        <div class="final-recommend">推荐队友：我</div>
+      </div>
+      <div style="font-size:16px;font-weight:bold;margin:18px 0 12px;">${ending.title}</div>
+      <div style="line-height:1.9;color:#333;">${ending.body}</div>
+      <button class="submit-btn" id="restartBtn" type="button">重新测评</button>
+    </div>
+  `;
+  document.getElementById("restartBtn").onclick = () => {
+    container.remove();
+    current = 0;
+    answers = Array(total).fill(null);
+    selectedScores = Array(total).fill(null);
+    stats = {};
+    logs = [];
+    renderLogs();
+    mainBox.style.display = "none";
+    openStartModal();
+  };
 }
 
 prevBtn.onclick = () => {
@@ -459,18 +282,22 @@ prevBtn.onclick = () => {
 
 nextBtn.onclick = () => {
   clearAllEffects();
-  if (current === 3) fromQ4ToQ5 = true;
   if (current < total - 1) {
     current++;
     renderQuestion();
   } else {
-    showFinalModal();
+    showFinalResult(answers[current] ?? 0);
   }
 };
 
+function resetDiary() {
+  diaryWrap.innerHTML = "";
+  diaryWrap.style.display = "none";
+}
+
 function openBgm() {
   bgm.muted = false;
-  bgm.volume = 0.6;
+  bgm.volume = 0.45;
   bgm.play().catch(() => {});
   document.removeEventListener("click", openBgm);
   document.removeEventListener("touchstart", openBgm);

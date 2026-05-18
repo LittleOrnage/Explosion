@@ -427,6 +427,166 @@ input {
   line-height: 1.8;
 }
 
+.system-log {
+  position: fixed;
+  top: 24px;
+  right: 22px;
+  width: min(280px, calc(100vw - 44px));
+  max-height: 42vh;
+  padding: 12px 14px;
+  border: 1px solid rgba(150, 0, 0, 0.22);
+  background: rgba(255, 255, 255, 0.88);
+  color: #4a4a4a;
+  z-index: 80;
+  display: none;
+  overflow: hidden;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+}
+
+.system-log.visible {
+  display: block;
+}
+
+.system-log-title {
+  font-size: 11px;
+  letter-spacing: 0;
+  color: #b00000;
+  margin-bottom: 8px;
+  font-weight: 700;
+}
+
+.log-line {
+  font-size: 12px;
+  line-height: 1.65;
+  color: #5c5c5c;
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+  padding-top: 6px;
+  margin-top: 6px;
+}
+
+.faint-option {
+  color: rgba(34, 34, 34, 0.52);
+}
+
+.pulse-option {
+  animation: optionPulse 1.8s infinite;
+}
+
+.glitch-option {
+  color: #b00000;
+  text-shadow: 1px 0 rgba(255, 0, 0, 0.5), -1px 0 rgba(0, 120, 255, 0.28);
+}
+
+.dim-others .option:not(:hover) {
+  opacity: 0.32;
+}
+
+@keyframes optionPulse {
+  0%, 100% {
+    border-color: #ddd;
+    color: #222;
+  }
+  50% {
+    border-color: rgba(198, 0, 0, 0.55);
+    color: #9a0000;
+  }
+}
+
+.corner-whisper {
+  position: fixed;
+  top: 12px;
+  right: 16px;
+  color: #c40000;
+  z-index: 9998;
+  font-size: 13px;
+  pointer-events: none;
+  background: rgba(255, 255, 255, 0.6);
+  padding: 4px 8px;
+}
+
+.profile-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 999999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.profile-inner {
+  width: min(92vw, 360px);
+  background: #fff;
+  border: 2px solid #c40000;
+  border-radius: 10px;
+  padding: 24px 22px;
+  color: #222;
+  line-height: 1.8;
+  text-align: left;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.22);
+}
+
+.profile-inner .submit-btn {
+  display: block;
+  margin: 18px auto 0;
+}
+
+.result-screen {
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  padding: 24px;
+}
+
+.result-lines {
+  min-height: 130px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 12px;
+}
+
+.ending-report {
+  max-height: 86vh;
+  overflow-y: auto;
+}
+
+.fake-report {
+  text-align: left;
+  line-height: 1.8;
+  border: 1px solid #eee;
+  padding: 12px;
+  margin-bottom: 10px;
+}
+
+.strike {
+  color: #777;
+  text-decoration: line-through;
+}
+
+.final-recommend {
+  margin-top: 8px;
+  color: #c40000;
+  font-weight: 700;
+}
+
+@media (max-width: 900px) {
+  .system-log {
+    top: auto;
+    right: 10px;
+    left: 10px;
+    bottom: 10px;
+    width: auto;
+    max-height: 24vh;
+  }
+
+  .box,
+  .diary-wrap {
+    max-height: 86vh;
+  }
+}
+
 .black-full-text {
   z-index: 99999999;
   font-size: clamp(20px, 5vw, 24px);
