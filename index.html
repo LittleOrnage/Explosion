@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>心理调查问卷</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="box" id="mainBox" aria-live="polite">
+      <h1 class="title" id="surveyTitle">心理健康调查问卷</h1>
+      <div class="progress" id="progress">第 1 题 / 共 30 题</div>
+      <section class="question" id="question"></section>
+      <section class="options" id="options"></section>
+      <nav class="btn-group">
+        <button class="btn prev-btn" id="prevBtn" type="button">上一题</button>
+        <button class="btn next-btn" id="nextBtn" type="button">下一题</button>
+      </nav>
+    </main>
+
+    <section class="diary-wrap" id="diaryWrap" aria-live="polite"></section>
+
+    <audio id="bgm" src="./bgm.m4a" loop preload="auto"></audio>
+    <script src="./story-config.js"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>
